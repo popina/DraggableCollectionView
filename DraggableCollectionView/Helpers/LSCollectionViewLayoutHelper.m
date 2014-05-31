@@ -37,8 +37,11 @@
             if(layoutAttributes.representedElementCategory != UICollectionElementCategoryCell) {
                 continue;
             }
-            if ([layoutAttributes.indexPath isEqual:hideIndexPath]) {
+            if (NSOrderedSame == [layoutAttributes.indexPath compare:hideIndexPath]) {
                 layoutAttributes.hidden = YES;
+            }
+            else {
+                layoutAttributes.hidden = NO;
             }
         }
         return elements;
@@ -53,7 +56,7 @@
         if(layoutAttributes.representedElementCategory != UICollectionElementCategoryCell) {
             continue;
         }
-        if([layoutAttributes.indexPath isEqual:indexPathToRemove]) {
+        if(NSOrderedSame == [layoutAttributes.indexPath compare:indexPathToRemove]) {
             // Remove item in source section and insert item in target section
             layoutAttributes.indexPath = [NSIndexPath indexPathForItem:[collectionView numberOfItemsInSection:toIndexPath.section]
                                                              inSection:toIndexPath.section];
@@ -62,10 +65,14 @@
             }
         }
         NSIndexPath *indexPath = layoutAttributes.indexPath;
-        if ([indexPath isEqual:hideIndexPath]) {
+        if (NSOrderedSame == [indexPath compare:hideIndexPath]) {
             layoutAttributes.hidden = YES;
         }
-        if([indexPath isEqual:toIndexPath]) {
+        else {
+            layoutAttributes.hidden = NO;
+        }
+        
+        if(NSOrderedSame == [indexPath compare:toIndexPath]) {
             // Item's new location
             layoutAttributes.indexPath = fromIndexPath;
         }

@@ -15,7 +15,7 @@ static int kObservingCollectionViewLayoutContext;
 #ifndef CGGEOMETRY__SUPPORT_H_
 CG_INLINE CGPoint
 _CGPointAdd(CGPoint point1, CGPoint point2) {
-    return CGPointMake(point1.x + point2.x, point1.y + point2.y);
+    return CGPointMake(point1.x /*+ point2.x*/, point1.y + point2.y);
 }
 #endif
 
@@ -236,10 +236,13 @@ typedef NS_ENUM(NSInteger, _ScrollingDirection) {
             [mockCell removeFromSuperview];
             mockCell = [[UIImageView alloc] initWithFrame:cell.frame];
             mockCell.image = [self imageFromCell:cell];
+            mockCell.layer.shadowRadius = 3.f;
+            mockCell.layer.shadowOpacity = 0.3f;
+            mockCell.layer.shadowOffset = CGSizeMake(0, 0);
             mockCenter = mockCell.center;
             [self.collectionView addSubview:mockCell];
             [UIView
-             animateWithDuration:0.3
+             animateWithDuration:0.2
              animations:^{
                  mockCell.transform = CGAffineTransformMakeScale(1.1f, 1.1f);
              }
@@ -279,19 +282,17 @@ typedef NS_ENUM(NSInteger, _ScrollingDirection) {
             
             // Switch mock for cell
             UICollectionViewLayoutAttributes *layoutAttributes = [self.collectionView layoutAttributesForItemAtIndexPath:self.layoutHelper.hideIndexPath];
-            [UIView
-             animateWithDuration:0.3
-             animations:^{
-                 mockCell.center = layoutAttributes.center;
-                 mockCell.transform = CGAffineTransformMakeScale(1.f, 1.f);
-             }
-             completion:^(BOOL finished) {
-                 [mockCell removeFromSuperview];
-                 mockCell = nil;
-                 self.layoutHelper.hideIndexPath = nil;
-                 [self.collectionView.collectionViewLayout invalidateLayout];
-             }];
-            
+
+            [UIView animateWithDuration:0.35 animations:^{
+                mockCell.center = layoutAttributes.center;
+                mockCell.transform = CGAffineTransformIdentity;
+            } completion:^(BOOL finished) {
+                self.layoutHelper.hideIndexPath = nil;
+                [self.collectionView.collectionViewLayout invalidateLayout];
+                [mockCell removeFromSuperview];
+                mockCell = nil;
+            }];
+
             // Reset
             [self invalidatesScrollTimer];
             lastIndexPath = nil;
@@ -314,6 +315,8 @@ typedef NS_ENUM(NSInteger, _ScrollingDirection) {
             toIndexPath:indexPath] == NO) {
         return;
     }
+
+    [self.collectionView.collectionViewLayout invalidateLayout];
     [self.collectionView performBatchUpdates:^{
         self.layoutHelper.hideIndexPath = indexPath;
         self.layoutHelper.toIndexPath = indexPath;
