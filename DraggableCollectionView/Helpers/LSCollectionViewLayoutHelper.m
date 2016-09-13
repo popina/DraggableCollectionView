@@ -44,8 +44,13 @@
                 layoutAttributes.hidden = NO;
             }
         }
+        
+        [self rearrangeIndexPathOfLayoutAttributesForElements:elements];
+        
         return elements;
     }
+    
+    [self rearrangeIndexPathOfLayoutAttributesForElements:elements];
     
     if (fromIndexPath.section != toIndexPath.section) {
         indexPathToRemove = [NSIndexPath indexPathForItem:[collectionView numberOfItemsInSection:fromIndexPath.section] - 1
@@ -71,7 +76,7 @@
         else {
             layoutAttributes.hidden = NO;
         }
-        
+
         if(NSOrderedSame == [indexPath compare:toIndexPath]) {
             // Item's new location
             layoutAttributes.indexPath = fromIndexPath;
@@ -100,5 +105,42 @@
     
     return elements;
 }
+
+- (void)rearrangeIndexPathOfLayoutAttributesForElements:(NSArray *)elements
+{
+    if ([[[UIDevice currentDevice] systemVersion] floatValue] >= 9.0)
+    {
+        NSComparator cmptr = ^(NSIndexPath *ele1, NSIndexPath *ele2){
+            
+            if (ele1.section < ele2.section)
+                return (NSComparisonResult)NSOrderedAscending;
+            
+            if (ele1.row < ele2.row)
+                return (NSComparisonResult)NSOrderedAscending;
+            
+            return (NSComparisonResult)NSOrderedDescending;
+        };
+        
+        NSMutableArray *indexPathArray = [NSMutableArray array];
+        
+        for (UICollectionViewLayoutAttributes *layoutAttributes in elements) {
+            
+            if([layoutAttributes.representedElementKind isEqualToString:UICollectionElementKindSectionHeader]
+               || [layoutAttributes.representedElementKind isEqualToString:UICollectionElementKindSectionFooter])
+            {
+                continue;
+            }
+            
+            [indexPathArray addObject:layoutAttributes.indexPath];
+        }
+        
+        NSArray *sortedArray = [[NSArray arrayWithArray:indexPathArray] sortedArrayUsingComparator:cmptr];
+        
+        for (NSInteger index = 0; index < sortedArray.count; ++index) {
+            ((UICollectionViewLayoutAttributes*)[elements objectAtIndex:index]).indexPath = (NSIndexPath *)[sortedArray objectAtIndex:index];
+        }
+    }
+}
+
 
 @end
