@@ -259,32 +259,48 @@ typedef NS_ENUM(NSInteger, _ScrollingDirection) {
         } break;
         case UIGestureRecognizerStateEnded:
         case UIGestureRecognizerStateCancelled: {
-            if(self.layoutHelper.fromIndexPath == nil) {
-                return;
+            BOOL canMove = YES;
+            
+            if (self.layoutHelper.fromIndexPath == nil) {
+                canMove = NO;
             }
+            if (self.collectionView.numberOfSections == 0) {
+                canMove = NO;
+            }
+            if ([self.collectionView numberOfItemsInSection:0] == 0) {
+                canMove = NO;
+            }
+            
             // Need these for later, but need to nil out layoutHelper's references sooner
             NSIndexPath *fromIndexPath = self.layoutHelper.fromIndexPath;
             NSIndexPath *toIndexPath = self.layoutHelper.toIndexPath;
-            // Tell the data source to move the item
-            id<UICollectionViewDataSource_Draggable> dataSource = (id<UICollectionViewDataSource_Draggable>)self.collectionView.dataSource;
-            [dataSource collectionView:self.collectionView moveItemAtIndexPath:fromIndexPath toIndexPath:toIndexPath];
-           
-            // Move the item
-            [self.collectionView performBatchUpdates:^{
-                [self.collectionView moveItemAtIndexPath:fromIndexPath toIndexPath:toIndexPath];
-                self.layoutHelper.fromIndexPath = nil;
-                self.layoutHelper.toIndexPath = nil;
-            } completion:^(BOOL finished) {
-                if (finished) {
-                    if ([dataSource respondsToSelector:@selector(collectionView:didMoveItemAtIndexPath:toIndexPath:)]) {
-                        [dataSource collectionView:self.collectionView didMoveItemAtIndexPath:fromIndexPath toIndexPath:toIndexPath];
+            
+            if (fromIndexPath != nil && [self.collectionView cellForItemAtIndexPath:fromIndexPath] == nil) {
+                canMove = NO;
+            }
+            
+            if (canMove) {
+                // Tell the data source to move the item
+                id<UICollectionViewDataSource_Draggable> dataSource = (id<UICollectionViewDataSource_Draggable>)self.collectionView.dataSource;
+                [dataSource collectionView:self.collectionView moveItemAtIndexPath:fromIndexPath toIndexPath:toIndexPath];
+                
+                // Move the item
+                [self.collectionView performBatchUpdates:^{
+                    [self.collectionView moveItemAtIndexPath:fromIndexPath toIndexPath:toIndexPath];
+                    self.layoutHelper.fromIndexPath = nil;
+                    self.layoutHelper.toIndexPath = nil;
+                } completion:^(BOOL finished) {
+                    if (finished) {
+                        if ([dataSource respondsToSelector:@selector(collectionView:didMoveItemAtIndexPath:toIndexPath:)]) {
+                            [dataSource collectionView:self.collectionView didMoveItemAtIndexPath:fromIndexPath toIndexPath:toIndexPath];
+                        }
                     }
-                }
-            }];
+                }];
+            }
             
             // Switch mock for cell
             UICollectionViewLayoutAttributes *layoutAttributes = [self.collectionView layoutAttributesForItemAtIndexPath:self.layoutHelper.hideIndexPath];
-
+            
             [UIView animateWithDuration:0.35 animations:^{
                 mockCell.center = layoutAttributes.center;
                 mockCell.transform = CGAffineTransformIdentity;
@@ -294,7 +310,7 @@ typedef NS_ENUM(NSInteger, _ScrollingDirection) {
                 [mockCell removeFromSuperview];
                 mockCell = nil;
             }];
-
+            
             // Reset
             [self invalidatesScrollTimer];
             lastIndexPath = nil;
